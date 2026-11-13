@@ -27,7 +27,7 @@ function loadFavorites() {
 
 const favorites = loadFavorites();
 const archive = characters.filter(character => !character.inProgress);
-const worlds = new Map();
+const worlds = new Map(["Elyndor","Lirenne","Sons of Lamia","Araya","Thaloria","Daril","Edrath","Contemporary"].map(name => [name, []]));
 for (const character of archive) {
   if (!character.world) continue;
   if (!worlds.has(character.world)) worlds.set(character.world, []);
@@ -101,6 +101,8 @@ function renderRoute() {
     key = '';
   }
   const character = hash.startsWith('#character-') && characters.find(entry => entry.id === (key === 'haisan' ? 'heisan' : key));
+  const renamedWorlds = { 'Court of Thorns': 'Elyndor', 'Caer Avar': 'Elyndor', Ayara: 'Araya', 'Daril Empire': 'Daril', Galewynd: 'Edrath', 'Contemporary Romance': 'Contemporary' };
+  if (hash.startsWith('#world/') && Object.hasOwn(renamedWorlds, key)) key = renamedWorlds[key];
   const world = hash.startsWith('#world/') && worlds.get(key);
   const wasDetail = !detail.hidden;
   detail.hidden = !character && !world;
@@ -200,7 +202,7 @@ byId('progress-grid').innerHTML = ['heisan', 'dracula', 'caedric-nondros', 'tyka
   .map(id => characters.find(character => character.id === id && character.inProgress))
   .filter(Boolean).map(characterCard).join('');
 
-byId('world-grid').innerHTML = [...worlds].map(([world, entries]) =>
+byId('world-grid').innerHTML = [...worlds].filter(([, entries]) => entries.length).map(([world, entries]) =>
   `<a class="world-card" href="#world/${encodeURIComponent(world)}">${portrait(entries[0], 'world-art')}<h3>${esc(world)}</h3>
     <span>${entries.length} ${entries.length === 1 ? 'profile' : 'profiles'} ↗</span></a>`
 ).join('');
