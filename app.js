@@ -25,8 +25,9 @@ function loadFavorites() {
 }
 
 const favorites = loadFavorites();
+const archive = characters.filter(character => !character.inProgress);
 const worlds = new Map();
-for (const character of characters) {
+for (const character of archive) {
   if (!worlds.has(character.world)) worlds.set(character.world, []);
   worlds.get(character.world).push(character);
 }
@@ -54,7 +55,8 @@ function characterCard(character) {
     <a class="character-card" href="#character-${encodeURIComponent(character.id)}" aria-label="Read ${name} profile">
       ${portrait(character)}
       <div class="card-content">
-        <div class="card-top"><span>${esc(character.genre)}</span></div>
+        <div class="card-top"><span>${esc(character.genre)}</span>
+          ${character.messages ? `<span>${character.messages.toLocaleString('en-US')} messages</span>` : ''}</div>
         <h3>${name}</h3><p class="card-title">${esc(character.title)}</p>
         <div class="card-bottom"><span>${esc(character.world)}</span><span>Read profile ↗</span></div>
       </div>
@@ -66,7 +68,7 @@ function characterCard(character) {
 
 function renderCollection() {
   const query = search.value.trim().toLowerCase();
-  const matches = characters.filter(character =>
+  const matches = archive.filter(character =>
     (genre.value === 'all' || character.genre === genre.value)
     && (trope.value === 'all' || character.tropes.includes(trope.value))
     && (!savedOnly.checked || favorites.has(character.id))
@@ -88,7 +90,7 @@ function renderRoute() {
   } catch {
     key = '';
   }
-  const character = hash.startsWith('#character-') && characters.find(entry => entry.id === key);
+  const character = hash.startsWith('#character-') && characters.find(entry => entry.id === (key === 'haisan' ? 'heisan' : key));
   const world = hash.startsWith('#world/') && worlds.get(key);
   const wasDetail = !detail.hidden;
   detail.hidden = !character && !world;
@@ -103,14 +105,14 @@ function renderRoute() {
   const worldLink = `#world/${encodeURIComponent(worldName)}`;
   const title = character ? character.name : worldName;
   document.title = `${title} | House of Nyx`;
-  detail.innerHTML = `<nav class="detail-nav" aria-label="Breadcrumb"><a href="#archive">← The Archive</a>
-    ${character ? `<a href="${worldLink}">${esc(worldName)} ↗</a>` : '<a href="#worlds">All worlds ↗</a>'}</nav>
+  detail.innerHTML = `<nav class="detail-nav" aria-label="Breadcrumb"><a href="${character?.inProgress ? '#in-progress' : '#archive'}">← ${character?.inProgress ? 'Works in Progress' : 'The Archive'}</a>
+    ${character ? (worlds.has(worldName) ? `<a href="${worldLink}">${esc(worldName)} ↗</a>` : '') : '<a href="#worlds">All worlds ↗</a>'}</nav>
     ${character ? `<article class="profile-layout detail-panel">
       ${portrait(character, 'profile-art')}
       <div class="profile-body">
         <p class="eyebrow">${esc(character.genre)}</p><h1 tabindex="-1">${esc(title)}</h1>
         <h2>${esc(character.title)}</h2><p class="profile-description">${esc(character.description)}</p>
-        <p>${esc(character.details)}</p>
+        ${character.details ? `<p>${esc(character.details)}</p>` : ''}
         <div class="profile-tags">${character.tropes.map(tag => `<span>${esc(tag)}</span>`).join('')}</div>
         ${/^https?:\/\//i.test(character.url) ? `<a class="button button-primary" href="${esc(character.url)}" target="_blank" rel="noopener noreferrer">Open on DreamJourneyAI ↗</a>`
           : '<p class="link-note">DreamJourneyAI link coming soon.</p>'}
@@ -120,8 +122,8 @@ function renderRoute() {
   detail.querySelector('h1').focus({ preventScroll: true });
 }
 
-addOptions(genre, characters.map(character => character.genre));
-addOptions(trope, characters.flatMap(character => character.tropes));
+addOptions(genre, archive.map(character => character.genre));
+addOptions(trope, archive.flatMap(character => character.tropes));
 search.addEventListener('input', renderCollection);
 for (const filter of [genre, trope, savedOnly]) filter.addEventListener('change', renderCollection);
 byId('clear').addEventListener('click', () => {
@@ -143,27 +145,31 @@ document.addEventListener('click', event => {
   } catch {
     // Favorites are available for the current visit when storage is unavailable.
   }
-  if (savedOnly.checked && detail.hidden) {
+  for (const control of document.querySelectorAll('[data-favorite]')) {
+    if (control.dataset.favorite !== id) continue;
+    control.setAttribute('aria-pressed', pressed);
+    control.textContent = pressed ? '♥' : '♡';
+  }
+  if (savedOnly.checked && grid.contains(button)) {
     renderCollection();
     byId('saved-only').focus();
   } else {
-    button.setAttribute('aria-pressed', pressed);
-    button.textContent = pressed ? '♥' : '♡';
-    if (!detail.hidden) renderCollection();
+    if (savedOnly.checked) renderCollection();
   }
 });
 
-const featured = characters.find(character => character.status === 'Featured') || characters[0];
-if (featured) {
+const popular = archive.filter(character => character.messages)
+  .sort((first, second) => second.messages - first.messages);
+if (popular.length) {
   byId('featured').hidden = false;
-  byId('featured').innerHTML = `<article class="profile-layout detail-panel featured-panel">
-    ${portrait(featured, 'profile-art')}
-    <div class="profile-body">
-      <p class="eyebrow">Featured story</p><h2>${esc(featured.name)}</h2>
-      <p class="profile-description">${esc(featured.description)}</p>
-      <a class="button button-primary" href="#character-${encodeURIComponent(featured.id)}">Read the story ↗</a>
-    </div></article>`;
+  byId('featured').innerHTML = `<div class="section-heading"><h2>Most <i>Popular</i></h2>
+    <p>Ranked by messages on DreamJourneyAI · Nov 12, 2026</p></div>
+    <div class="character-grid">${popular.map(characterCard).join('')}</div>`;
 }
+
+byId('progress-grid').innerHTML = ['heisan', 'dracula', 'caedric-nondros']
+  .map(id => characters.find(character => character.id === id && character.inProgress))
+  .filter(Boolean).map(characterCard).join('');
 
 byId('world-grid').innerHTML = [...worlds].map(([world, entries]) =>
   `<a class="world-card" href="#world/${encodeURIComponent(world)}"><h3>${esc(world)}</h3>
