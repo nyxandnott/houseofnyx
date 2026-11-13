@@ -27,12 +27,14 @@ function loadFavorites() {
 
 const favorites = loadFavorites();
 const archive = characters.filter(character => !character.inProgress);
-const worlds = new Map(["Elyndor","Lirenne","Sons of Lamia","Araya","Thaloria","Daril","Edrath","Contemporary"].map(name => [name, []]));
+const worlds = new Map(["Elyndor","Lirenne","Sons of Lamia","Araya","Thaloria","Daril","Edrath","Contemporary","Historical"].map(name => [name, []]));
 for (const character of archive) {
   if (!character.world) continue;
   if (!worlds.has(character.world)) worlds.set(character.world, []);
   worlds.get(character.world).push(character);
 }
+
+worlds.set('Historical', archive.filter(character => character.tropes.includes('Historical') || character.world === 'Historical'));
 
 function addOptions(select, values) {
   for (const value of [...new Set(values)].sort()) {
