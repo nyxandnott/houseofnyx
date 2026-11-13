@@ -28,6 +28,7 @@ const favorites = loadFavorites();
 const archive = characters.filter(character => !character.inProgress);
 const worlds = new Map();
 for (const character of archive) {
+  if (!character.world) continue;
   if (!worlds.has(character.world)) worlds.set(character.world, []);
   worlds.get(character.world).push(character);
 }
@@ -57,8 +58,8 @@ function characterCard(character) {
       <div class="card-content">
         <div class="card-top"><span>${esc(character.genre)}</span>
           ${character.messages ? `<span>${character.messages.toLocaleString('en-US')} messages</span>` : ''}</div>
-        <h3>${name}</h3><p class="card-title">${esc(character.title)}</p>
-        <div class="card-bottom"><span>${esc(character.world)}</span><span>Read profile ↗</span></div>
+        <h3>${name}</h3><p class="card-title">${esc(character.title || character.description)}</p>
+        <div class="card-bottom"><span>${esc(character.world || character.type)}</span><span>Read profile ↗</span></div>
       </div>
     </a>
     <button class="favorite" type="button" data-favorite="${esc(character.id)}"
@@ -111,7 +112,7 @@ function renderRoute() {
       ${portrait(character, 'profile-art')}
       <div class="profile-body">
         <p class="eyebrow">${esc(character.genre)}</p><h1 tabindex="-1">${esc(title)}</h1>
-        <h2>${esc(character.title)}</h2><p class="profile-description">${esc(character.description)}</p>
+        ${character.title ? `<h2>${esc(character.title)}</h2>` : ''}<p class="profile-description">${esc(character.description)}</p>
         ${character.details ? `<p>${esc(character.details)}</p>` : ''}
         <div class="profile-tags">${character.tropes.map(tag => `<span>${esc(tag)}</span>`).join('')}</div>
         ${/^https?:\/\//i.test(character.url) ? `<a class="button button-primary" href="${esc(character.url)}" target="_blank" rel="noopener noreferrer">Open on DreamJourneyAI ↗</a>`
@@ -159,7 +160,7 @@ document.addEventListener('click', event => {
 });
 
 const popular = archive.filter(character => character.messages)
-  .sort((first, second) => second.messages - first.messages);
+  .sort((first, second) => second.messages - first.messages).slice(0, 6);
 if (popular.length) {
   byId('featured').hidden = false;
   byId('featured').innerHTML = `<div class="section-heading"><h2>Most <i>Popular</i></h2>
@@ -167,7 +168,7 @@ if (popular.length) {
     <div class="character-grid">${popular.map(characterCard).join('')}</div>`;
 }
 
-byId('progress-grid').innerHTML = ['heisan', 'dracula', 'caedric-nondros']
+byId('progress-grid').innerHTML = ['heisan', 'dracula', 'caedric-nondros', 'tykan-aendart', 'conall-thanlar']
   .map(id => characters.find(character => character.id === id && character.inProgress))
   .filter(Boolean).map(characterCard).join('');
 
