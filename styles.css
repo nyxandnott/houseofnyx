@@ -139,3 +139,10 @@ footer{margin-top:65px}
  .archive-prompt{flex-wrap:wrap}.search-wrap{order:0;margin-left:0;flex:1 0 100%}.section{padding-top:45px}
 }
 @media(max-width:470px){.character-grid,.world-grid,.about-panel{grid-template-columns:1fr}.about-panel img{max-width:230px}}
+
+.study-hero{flex-direction:row}
+.study-hero::after{z-index:0;opacity:1;transform:none}
+.button-primary{background:#426f61;color:#fff9ee}
+.button-primary:hover{background:#25466f;color:#fff9ee}
+.section-heading h2 i{color:inherit}
+@media(max-width:700px){.study-hero{align-items:flex-end}}
