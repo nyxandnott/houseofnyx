@@ -6,6 +6,7 @@ const search = byId('search');
 const genre = byId('genre');
 const trope = byId('trope');
 const savedOnly = byId('saved-only');
+const storyTypes = [...document.querySelectorAll('[name=story-type]')];
 const home = byId('home-view');
 const detail = byId('detail-view');
 const siteTitle = document.title;
@@ -67,15 +68,23 @@ function characterCard(character) {
   </article>`;
 }
 
-function renderCollection() {
+function matchingStories() {
   const query = search.value.trim().toLowerCase();
-  const matches = archive.filter(character =>
+  const type = storyTypes.find(control => control.checked).value;
+  return archive.filter(character =>
+    (type === 'all' || character.type === type)
+    &&
     (genre.value === 'all' || character.genre === genre.value)
     && (trope.value === 'all' || character.tropes.includes(trope.value))
     && (!savedOnly.checked || favorites.has(character.id))
     && [character.name, character.title, character.world, character.genre,
       character.description, ...character.tropes].join(' ').toLowerCase().includes(query)
   );
+}
+
+function renderCollection() {
+  const matches = matchingStories();
+  byId('surprise').disabled = !matches.length;
   grid.innerHTML = matches.map(characterCard).join('');
   byId('result-count').textContent = `${matches.length} ${matches.length === 1 ? 'profile' : 'profiles'}`;
   const empty = byId('empty-state');
@@ -126,12 +135,19 @@ function renderRoute() {
 addOptions(genre, archive.map(character => character.genre));
 addOptions(trope, archive.flatMap(character => character.tropes));
 search.addEventListener('input', renderCollection);
-for (const filter of [genre, trope, savedOnly]) filter.addEventListener('change', renderCollection);
+for (const filter of [genre, trope, savedOnly, ...storyTypes]) filter.addEventListener('change', renderCollection);
 byId('clear').addEventListener('click', () => {
   search.value = '';
   genre.value = trope.value = 'all';
   savedOnly.checked = false;
+  storyTypes[0].checked = true;
   renderCollection();
+});
+
+byId('surprise').addEventListener('click', () => {
+  const matches = matchingStories();
+  const story = matches[Math.floor(Math.random() * matches.length)];
+  if (story) location.hash = '#character-' + encodeURIComponent(story.id);
 });
 
 document.addEventListener('click', event => {
@@ -163,9 +179,17 @@ const popular = archive.filter(character => character.messages)
   .sort((first, second) => second.messages - first.messages).slice(0, 6);
 if (popular.length) {
   byId('featured').hidden = false;
-  byId('featured').innerHTML = `<div class="section-heading"><h2>Most <i>Popular</i></h2>
-    <p>Ranked by messages on DreamJourneyAI · Nov 12, 2026</p></div>
-    <div class="character-grid">${popular.map(characterCard).join('')}</div>`;
+  const [lead, ...other] = popular;
+  const leadLink = `#character-${encodeURIComponent(lead.id)}`;
+  byId('featured').innerHTML = `<div class="section-heading"><h2>Most Popular</h2></div>
+    <article class="featured-story">
+      <a href="${leadLink}" aria-label="Read ${esc(lead.name)} profile">${portrait(lead)}</a>
+      <div class="featured-copy"><p class="eyebrow">Most-chatted story · ${lead.messages.toLocaleString('en-US')} messages</p>
+      <h3>${esc(lead.name)}</h3><p>${esc(lead.description)}</p>
+      <a class="button button-primary" href="${leadLink}">Open this story ↗</a></div>
+    </article>
+    <details class="popular-more"><summary>See the rest of the top six</summary>
+    <div class="character-grid">${other.map(characterCard).join('')}</div></details>`;
 }
 
 byId('progress-grid').innerHTML = ['heisan', 'dracula', 'caedric-nondros', 'tykan-aendart', 'conall-thanlar']
@@ -173,7 +197,7 @@ byId('progress-grid').innerHTML = ['heisan', 'dracula', 'caedric-nondros', 'tyka
   .filter(Boolean).map(characterCard).join('');
 
 byId('world-grid').innerHTML = [...worlds].map(([world, entries]) =>
-  `<a class="world-card" href="#world/${encodeURIComponent(world)}"><h3>${esc(world)}</h3>
+  `<a class="world-card" href="#world/${encodeURIComponent(world)}">${portrait(entries[0], 'world-art')}<h3>${esc(world)}</h3>
     <span>${entries.length} ${entries.length === 1 ? 'profile' : 'profiles'} ↗</span></a>`
 ).join('');
 
