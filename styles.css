@@ -252,3 +252,12 @@ footer{margin-top:65px}
     to { opacity: 1; transform: perspective(900px) rotateX(0); }
   }
 }
+.story-book .profile-body h1 {
+  font: 600 clamp(2.6rem, 5vw, 4.5rem)/.96 'Cormorant Garamond', serif;
+  outline: none;
+}
+.story-book .profile-body h2 {
+  font: italic 500 clamp(1.35rem, 2.3vw, 2rem)/1.12 'Cormorant Garamond', serif;
+  margin: .6rem 0 1.35rem;
+}
+.story-book .profile-body .profile-description { color: #192942 !important; }
