@@ -1,0 +1,21 @@
+HOUSE OF NYX — SAPPHIRE CONSERVATORY UPDATE
+
+Your site is already published! You do not need to create another repository.
+
+HOW TO UPDATE THE LIVE WEBSITE:
+1. Open your existing house-of-nyx repository on GitHub.
+2. Click Add file > Upload files.
+3. Drag in the contents of this updated house-of-nyx folder (not the ZIP).
+4. If GitHub asks about replacing existing files, allow the replacement.
+5. Click Commit changes.
+6. Wait a minute or two, then refresh your live GitHub Pages website.
+
+The redesign uses the exact five colors you chose:
+#111C30 midnight blue
+#25466F sapphire
+#426F61 emerald
+#A9BFC4 silver mist
+#E7DAC2 parchment
+
+All existing gallery, profile, search, filter, and update functionality is retained.
+To customize further, edit styles.css. The Sapphire Conservatory section is at the end.
