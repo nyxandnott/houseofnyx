@@ -1,10 +1,193 @@
-const characters=window.NYX_CHARACTERS||[];const updates=window.NYX_UPDATES||[];
-const grid=document.querySelector('#character-grid'),search=document.querySelector('#search'),genre=document.querySelector('#genre'),trope=document.querySelector('#trope'),dialog=document.querySelector('#profile-dialog');
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function options(el,values){[...new Set(values)].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;el.append(o)})}
-options(genre,characters.map(c=>c.genre));options(trope,characters.flatMap(c=>c.tropes));
-function art(c,cls='portrait'){const style=`--accent:${c.accent||'#6b535b'}`;return `<div class="${cls} ${c.image?'has-image':''}" style="${style}">${c.image?`<img src="${esc(c.image)}" alt="Portrait of ${esc(c.name)}" loading="lazy">`:`<div class="placeholder-art"><span>✦</span><strong>${esc(c.name.split(' ').map(x=>x[0]).join(''))}</strong><small>HOUSE OF NYX</small></div>`}</div>`}
-function render(){const q=search.value.toLowerCase().trim(),g=genre.value,t=trope.value;const results=characters.filter(c=>(g==='all'||c.genre===g)&&(t==='all'||c.tropes.includes(t))&&[c.name,c.title,c.world,c.genre,c.description,...c.tropes].join(' ').toLowerCase().includes(q));grid.innerHTML=results.map(c=>`<button type="button" class="character-card" data-id="${esc(c.id)}" aria-label="Read ${esc(c.name)} profile">${art(c)}<div class="card-content"><div class="card-top"><span>${esc(c.genre)}</span>${c.status?`<span class="status">${esc(c.status)}</span>`:''}</div><h3>${esc(c.name)}</h3><p class="card-title">${esc(c.title)}</p><div class="card-bottom"><span>${esc(c.world)}</span><span>EXPLORE ↗</span></div></div></button>`).join('');document.querySelector('#result-count').textContent=`${results.length} ${results.length===1?'SOUL':'SOULS'} IN THE ARCHIVE`;document.querySelector('#empty-state').hidden=!!results.length}
-function showProfile(id){const c=characters.find(c=>c.id===id);if(!c)return;document.querySelector('#profile-content').innerHTML=`<div class="profile-layout">${art(c,'profile-art')}<div class="profile-body"><p class="eyebrow">${esc(c.world)} / ${esc(c.genre)}</p><h2>${esc(c.name)}</h2><h3>${esc(c.title)}</h3><div class="profile-rule">✦</div><p class="profile-description">${esc(c.description)}</p><p>${esc(c.details)}</p><div class="profile-tags">${c.tropes.map(t=>`<span>${esc(t)}</span>`).join('')}</div>${c.url?`<a class="button button-primary" href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">Meet the Character ↗</a>`:`<p class="link-note">Character link coming soon. Add a URL in data.js.</p>`}</div></div>`;dialog.showModal();history.replaceState(null,'',`#character-${c.id}`)}
-grid.addEventListener('click',e=>{const card=e.target.closest('[data-id]');if(card)showProfile(card.dataset.id)});document.querySelector('#close-dialog').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()});dialog.addEventListener('close',()=>{if(location.hash.startsWith('#character-'))history.replaceState(null,'','#archive')});[search,genre,trope].forEach(el=>el.addEventListener(el===search?'input':'change',render));document.querySelector('#clear').addEventListener('click',()=>{search.value='';genre.value='all';trope.value='all';render()});
-document.querySelector('#updates-list').innerHTML=updates.map(u=>`<article class="update-entry"><div class="update-date">${esc(u.date)}<br><span>${esc(u.category)}</span></div><div><h3>${esc(u.title)}</h3><p>${esc(u.text)}</p></div><span class="update-star">✧</span></article>`).join('');const toggle=document.querySelector('.menu-toggle'),nav=document.querySelector('.navigation');toggle.addEventListener('click',()=>{const open=nav.classList.toggle('open');toggle.setAttribute('aria-expanded',String(open))});nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');toggle.setAttribute('aria-expanded','false')}));render();if(location.hash.startsWith('#character-'))showProfile(location.hash.slice(11));
+const characters = window.NYX_CHARACTERS || [];
+const updates = window.NYX_UPDATES || [];
+const byId = id => document.getElementById(id);
+const grid = byId('character-grid');
+const search = byId('search');
+const genre = byId('genre');
+const trope = byId('trope');
+const savedOnly = byId('saved-only');
+const home = byId('home-view');
+const detail = byId('detail-view');
+const siteTitle = document.title;
+const storageKey = 'house-of-nyx-favorites';
+
+const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+})[character]);
+
+function loadFavorites() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(storageKey));
+    return new Set(Array.isArray(stored) ? stored : []);
+  } catch {
+    return new Set();
+  }
+}
+
+const favorites = loadFavorites();
+const worlds = new Map();
+for (const character of characters) {
+  if (!worlds.has(character.world)) worlds.set(character.world, []);
+  worlds.get(character.world).push(character);
+}
+
+function addOptions(select, values) {
+  for (const value of [...new Set(values)].sort()) {
+    select.add(new Option(value, value));
+  }
+}
+
+function portrait(character, className = 'portrait') {
+  const accent = /^#[0-9a-f]{6}$/i.test(character.accent) ? character.accent : '#426F61';
+  const initials = character.name.split(' ').map(word => word[0]).join('');
+  return `<div class="${className} ${character.image ? 'has-image' : ''}" style="--accent:${accent}">
+    ${character.image
+      ? `<img src="${esc(character.image)}" alt="Portrait of ${esc(character.name)}" loading="lazy">`
+      : `<div class="placeholder-art" aria-hidden="true"><span>✦</span><strong>${esc(initials)}</strong></div>`}
+  </div>`;
+}
+
+function characterCard(character) {
+  const name = esc(character.name);
+  const pressed = favorites.has(character.id);
+  return `<article class="archive-card">
+    <a class="character-card" href="#character-${encodeURIComponent(character.id)}" aria-label="Read ${name} profile">
+      ${portrait(character)}
+      <div class="card-content">
+        <div class="card-top"><span>${esc(character.genre)}</span></div>
+        <h3>${name}</h3><p class="card-title">${esc(character.title)}</p>
+        <div class="card-bottom"><span>${esc(character.world)}</span><span>Read profile ↗</span></div>
+      </div>
+    </a>
+    <button class="favorite" type="button" data-favorite="${esc(character.id)}"
+      aria-label="Save ${name}" aria-pressed="${pressed}">${pressed ? '♥' : '♡'}</button>
+  </article>`;
+}
+
+function renderCollection() {
+  const query = search.value.trim().toLowerCase();
+  const matches = characters.filter(character =>
+    (genre.value === 'all' || character.genre === genre.value)
+    && (trope.value === 'all' || character.tropes.includes(trope.value))
+    && (!savedOnly.checked || favorites.has(character.id))
+    && [character.name, character.title, character.world, character.genre,
+      character.description, ...character.tropes].join(' ').toLowerCase().includes(query)
+  );
+  grid.innerHTML = matches.map(characterCard).join('');
+  byId('result-count').textContent = `${matches.length} ${matches.length === 1 ? 'profile' : 'profiles'}`;
+  const empty = byId('empty-state');
+  empty.hidden = matches.length > 0;
+  empty.textContent = savedOnly.checked ? 'No saved profiles match these filters.' : 'No profiles match these filters.';
+}
+
+function renderRoute() {
+  const hash = location.hash;
+  let key;
+  try {
+    key = decodeURIComponent(hash.slice(hash.startsWith('#world/') ? 7 : 11));
+  } catch {
+    key = '';
+  }
+  const character = hash.startsWith('#character-') && characters.find(entry => entry.id === key);
+  const world = hash.startsWith('#world/') && worlds.get(key);
+  const wasDetail = !detail.hidden;
+  detail.hidden = !character && !world;
+  home.hidden = !detail.hidden;
+  if (detail.hidden) {
+    document.title = siteTitle;
+    if (wasDetail) requestAnimationFrame(() => (byId(hash.slice(1)) || home).scrollIntoView());
+    return;
+  }
+
+  const worldName = character ? character.world : key;
+  const worldLink = `#world/${encodeURIComponent(worldName)}`;
+  const title = character ? character.name : worldName;
+  document.title = `${title} | House of Nyx`;
+  detail.innerHTML = `<nav class="detail-nav" aria-label="Breadcrumb"><a href="#archive">← The Archive</a>
+    ${character ? `<a href="${worldLink}">${esc(worldName)} ↗</a>` : '<a href="#worlds">All worlds ↗</a>'}</nav>
+    ${character ? `<article class="profile-layout detail-panel">
+      ${portrait(character, 'profile-art')}
+      <div class="profile-body">
+        <p class="eyebrow">${esc(character.genre)}</p><h1 tabindex="-1">${esc(title)}</h1>
+        <h2>${esc(character.title)}</h2><p class="profile-description">${esc(character.description)}</p>
+        <p>${esc(character.details)}</p>
+        <div class="profile-tags">${character.tropes.map(tag => `<span>${esc(tag)}</span>`).join('')}</div>
+        ${/^https?:\/\//i.test(character.url) ? `<a class="button button-primary" href="${esc(character.url)}" target="_blank" rel="noopener noreferrer">Open on DreamJourneyAI ↗</a>`
+          : '<p class="link-note">DreamJourneyAI link coming soon.</p>'}
+      </div>
+    </article>` : `<h1 tabindex="-1">${esc(title)}</h1><div class="character-grid">${world.map(characterCard).join('')}</div>`}`;
+  window.scrollTo(0, 0);
+  detail.querySelector('h1').focus({ preventScroll: true });
+}
+
+addOptions(genre, characters.map(character => character.genre));
+addOptions(trope, characters.flatMap(character => character.tropes));
+search.addEventListener('input', renderCollection);
+for (const filter of [genre, trope, savedOnly]) filter.addEventListener('change', renderCollection);
+byId('clear').addEventListener('click', () => {
+  search.value = '';
+  genre.value = trope.value = 'all';
+  savedOnly.checked = false;
+  renderCollection();
+});
+
+document.addEventListener('click', event => {
+  const button = event.target.closest('[data-favorite]');
+  if (!button) return;
+  const id = button.dataset.favorite;
+  const pressed = !favorites.has(id);
+  if (pressed) favorites.add(id);
+  else favorites.delete(id);
+  try {
+    localStorage.setItem(storageKey, JSON.stringify([...favorites]));
+  } catch {
+    // Favorites are available for the current visit when storage is unavailable.
+  }
+  if (savedOnly.checked && detail.hidden) {
+    renderCollection();
+    byId('saved-only').focus();
+  } else {
+    button.setAttribute('aria-pressed', pressed);
+    button.textContent = pressed ? '♥' : '♡';
+    if (!detail.hidden) renderCollection();
+  }
+});
+
+const featured = characters.find(character => character.status === 'Featured') || characters[0];
+if (featured) {
+  byId('featured').hidden = false;
+  byId('featured').innerHTML = `<article class="profile-layout detail-panel featured-panel">
+    ${portrait(featured, 'profile-art')}
+    <div class="profile-body">
+      <p class="eyebrow">Featured story</p><h2>${esc(featured.name)}</h2>
+      <p class="profile-description">${esc(featured.description)}</p>
+      <a class="button button-primary" href="#character-${encodeURIComponent(featured.id)}">Read the story ↗</a>
+    </div></article>`;
+}
+
+byId('world-grid').innerHTML = [...worlds].map(([world, entries]) =>
+  `<a class="world-card" href="#world/${encodeURIComponent(world)}"><h3>${esc(world)}</h3>
+    <span>${entries.length} ${entries.length === 1 ? 'profile' : 'profiles'} ↗</span></a>`
+).join('');
+
+byId('updates-list').innerHTML = updates.map(update =>
+  `<article class="update-entry"><div class="update-date">${esc(update.date)}<br><span>${esc(update.category)}</span></div>
+    <div><h3>${esc(update.title)}</h3><p>${esc(update.text)}</p></div><span class="update-star">✧</span></article>`
+).join('');
+
+const toggle = document.querySelector('.menu-toggle');
+const navigation = document.querySelector('.navigation');
+toggle.addEventListener('click', () => {
+  const open = navigation.classList.toggle('open');
+  toggle.setAttribute('aria-expanded', String(open));
+});
+navigation.addEventListener('click', event => {
+  if (event.target.closest('a')) {
+    navigation.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+});
+
+renderCollection();
+renderRoute();
+window.addEventListener('hashchange', renderRoute);
