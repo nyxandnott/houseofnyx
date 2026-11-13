@@ -146,3 +146,109 @@ footer{margin-top:65px}
 .button-primary:hover{background:#25466f;color:#fff9ee}
 .section-heading h2 i{color:inherit}
 @media(max-width:700px){.study-hero{align-items:flex-end}}
+
+/* The hinged cover is decorative. The story remains readable throughout. */
+.story-book {
+  position: relative;
+  overflow: visible;
+  isolation: isolate;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  perspective: 1600px;
+  border: 0;
+  border-radius: 8px;
+  background: #e7dac2;
+  box-shadow: 0 18px 60px #060c19b3, 0 0 0 5px #25466f;
+}
+.story-book .profile-art {
+  position: relative;
+  min-height: 440px;
+  border-radius: 7px 0 0 7px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at top, #25466f, #111c30);
+}
+.story-book .profile-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.story-book .profile-body {
+  color: #111c30;
+  padding: clamp(1.5rem, 5vw, 4rem);
+  border-radius: 0 7px 7px 0;
+  background: linear-gradient(90deg, #c1ae8d, #e7dac2 7%, #f3ead8 55%, #e7dac2);
+  overflow-wrap: anywhere;
+}
+.story-book .profile-body h1,
+.story-book .profile-body h2,
+.story-book .profile-body p { color: inherit; }
+.story-book .profile-body .eyebrow,
+.story-book .profile-body .link-note { color: #294d45; }
+.story-book .profile-tags span {
+  color: #294d45;
+  background: #426f6115;
+  border: 1px solid #426f6166;
+}
+.story-book .profile-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 90%, #101728a0);
+  pointer-events: none;
+}
+.book-cover { display: none; }
+@media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
+  .book-cover {
+    display: block;
+    position: absolute;
+    z-index: 2;
+    inset: 0 0 0 50%;
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    pointer-events: none;
+    animation: open-story-cover 950ms cubic-bezier(.33,.05,.2,1) both;
+  }
+  .book-cover-front, .book-cover-back {
+    position: absolute;
+    inset: 0;
+    border-radius: 0 8px 8px 0;
+    backface-visibility: hidden;
+  }
+  .book-cover-front {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 1rem;
+    color: #e7dac2;
+    outline: 1px solid #a9bfc4;
+    outline-offset: -18px;
+    border: 5px solid #25466f;
+    background: radial-gradient(ellipse at center, #25466f, #111c30 78%);
+  }
+  .book-cover-front strong {
+    font: 400 clamp(2rem, 4vw, 4rem) 'UnifrakturMaguntia', serif;
+  }
+  .book-cover-front span { font-size: 3rem; }
+  .book-cover-back {
+    transform: rotateY(180deg);
+    background: linear-gradient(90deg, #e7dac2 88%, #b4a180);
+  }
+  @keyframes open-story-cover {
+    0%, 12% { transform: rotateY(0); opacity: 1; }
+    82% { transform: rotateY(-172deg); opacity: 1; }
+    100% { transform: rotateY(-180deg); opacity: 0; visibility: hidden; }
+  }
+}
+@media (max-width: 760px) {
+  .story-book { grid-template-columns: minmax(0, 1fr); }
+  .story-book .profile-art { min-height: clamp(230px, 65vw, 380px); border-radius: 7px 7px 0 0; }
+  .story-book .profile-body { border-radius: 0 0 7px 7px; }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
+  .story-book { animation: unfold-story 480ms ease-out both; transform-origin: top; }
+  @keyframes unfold-story {
+    from { opacity: .3; transform: perspective(900px) rotateX(-12deg); }
+    to { opacity: 1; transform: perspective(900px) rotateX(0); }
+  }
+}

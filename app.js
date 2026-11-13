@@ -117,7 +117,11 @@ function renderRoute() {
   document.title = `${title} | House of Nyx`;
   detail.innerHTML = `<nav class="detail-nav" aria-label="Breadcrumb"><a href="${character?.inProgress ? '#in-progress' : '#archive'}">← ${character?.inProgress ? 'Works in Progress' : 'The Archive'}</a>
     ${character ? (worlds.has(worldName) ? `<a href="${worldLink}">${esc(worldName)} ↗</a>` : '') : '<a href="#worlds">All worlds ↗</a>'}</nav>
-    ${character ? `<article class="profile-layout detail-panel">
+    ${character ? `<article class="profile-layout detail-panel story-book">
+      <div class="book-cover" aria-hidden="true">
+        <div class="book-cover-front"><span>☾</span><strong>House of Nyx</strong></div>
+        <div class="book-cover-back"></div>
+      </div>
       ${portrait(character, 'profile-art')}
       <div class="profile-body">
         <p class="eyebrow">${esc(character.genre)}</p><h1 tabindex="-1">${esc(title)}</h1>
