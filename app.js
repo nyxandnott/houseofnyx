@@ -29,7 +29,7 @@ const favorites = loadFavorites();
 const archive = characters.filter(character => !character.inProgress);
 const worlds = new Map(["Elyndor","Lirenne","Sons of Lamia","Araya","Thaloria","Daril","Edrath","Contemporary","Historical"].map(name => [name, []]));
 for (const character of archive) {
-  if (!character.world) continue;
+  if (!character.world || character.world === 'France') continue;
   if (!worlds.has(character.world)) worlds.set(character.world, []);
   worlds.get(character.world).push(character);
 }
@@ -103,7 +103,7 @@ function renderRoute() {
     key = '';
   }
   const character = hash.startsWith('#character-') && characters.find(entry => entry.id === (key === 'haisan' ? 'heisan' : key));
-  const renamedWorlds = { 'Court of Thorns': 'Elyndor', 'Caer Avar': 'Elyndor', Ayara: 'Araya', 'Daril Empire': 'Daril', Galewynd: 'Edrath', 'Contemporary Romance': 'Contemporary' };
+  const renamedWorlds = { France: 'Historical', 'Khar Arzhan': 'The Ashkari', 'Court of Thorns': 'Elyndor', 'Caer Avar': 'Elyndor', Ayara: 'Araya', 'Daril Empire': 'Daril', Galewynd: 'Edrath', 'Contemporary Romance': 'Contemporary' };
   if (hash.startsWith('#world/') && Object.hasOwn(renamedWorlds, key)) key = renamedWorlds[key];
   const world = hash.startsWith('#world/') && worlds.get(key);
   const wasDetail = !detail.hidden;
